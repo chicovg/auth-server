@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="title">Log in with your credentials</h1>
+  <form method="post" action="/login">
+      <div class="field">
+          <label class="label" for="username">Username</label>
+          <div class="control has-icons-left">
+              <input id="username" class="input" type="text" name="username" placeholder="Username" />
+              <span class="icon is-small is-left">
+                  <i class="fas fa-user"></i>
+              </span>
+          </div>
+      </div>
+      <div class="field">
+          <label class="label" for="password">Password</label>
+          <div class="control has-icons-left">
+              <input id="password" class="input" type="password" name="password" placeholder="Password" />
+              <span class="icon is-small is-left">
+                  <i class="fas fa-key"></i>
+              </span>
+          </div>
+      </div>
+      <button class="button is-primary">Submit</button>
+      <button class="button">Cancel</button>
+  </form>
+{% endblock %}
