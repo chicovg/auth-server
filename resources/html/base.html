@@ -27,7 +27,7 @@
                   <div class="navbar-start">
                       <a href="/" class="navbar-item{% ifequal page "home.html" %} is-active{%endifequal%}">Home</a>
                       <a href="/login" class="navbar-item{% ifequal page "login.html" %} is-active{%endifequal%}">Log In</a>
-                      <a href="/about" class="navbar-item{% ifequal page "about.html" %} is-active{%endifequal%}">About</a>
+                      <a href="/api/api-docs/" class="navbar-item">API Docs</a>
                   </div>
               </div>
           </div>
@@ -41,18 +41,27 @@
       </section>
 
     <!-- scripts -->
-    <script type="text/javascript">
-      (function() {
-        var burger = document.querySelector('.burger');
-        var nav = document.querySelector('#'+burger.dataset.target);
-        burger.addEventListener('click', function(){
-          burger.classList.toggle('is-active');
-          nav.classList.toggle('is-active');
-        });
-      })();
-    </script>
-    <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+      <script type="text/javascript">
+       (function() {
+           var burger = document.querySelector('.burger');
+           var nav = document.querySelector('#'+burger.dataset.target);
+           burger.addEventListener('click', function(){
+               burger.classList.toggle('is-active');
+               nav.classList.toggle('is-active');
+           });
+           document.addEventListener('DOMContentLoaded', () => {
+               (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+                   var $notification = $delete.parentNode;
 
+                   $delete.addEventListener('click', () => {
+                       $notification.parentNode.removeChild($notification);
+                   });
+               });
+           });
+       })();
+      </script>
+    <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+   
     {% block page-scripts %}
     {% endblock %}
   </body>

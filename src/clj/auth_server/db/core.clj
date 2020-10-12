@@ -1,13 +1,14 @@
 (ns auth-server.db.core
   (:require
-    [cheshire.core :refer [generate-string parse-string]]
-    [next.jdbc.date-time]
-    [next.jdbc.prepare]
-    [next.jdbc.result-set]
-    [clojure.tools.logging :as log]
-    [conman.core :as conman]
-    [auth-server.config :refer [env]]
-    [mount.core :refer [defstate]])
+   [buddy.hashers :as h]
+   [cheshire.core :refer [generate-string parse-string]]
+   [next.jdbc.date-time]
+   [next.jdbc.prepare]
+   [next.jdbc.result-set]
+   [clojure.tools.logging :as log]
+   [conman.core :as conman]
+   [auth-server.config :refer [env]]
+   [mount.core :refer [defstate]])
   (:import (org.postgresql.util PGobject)))
 
 (defstate ^:dynamic *db*
@@ -74,3 +75,8 @@
                            (apply str (rest type-name)))]
         (.setObject stmt idx (.createArrayOf conn elem-type (to-array v)))
         (.setObject stmt idx (clj->jsonb-pgobj v))))))
+
+(defn create-user-with-hashed-pw [username password admin]
+  (create-user! *db* {:username username
+                      :password (h/encrypt password)
+                      :admin admin}))

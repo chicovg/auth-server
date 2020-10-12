@@ -51,7 +51,8 @@
   :plugins [] 
 
   :profiles
-  {:uberjar {:omit-source true
+  {:client {:main client.core}
+   :uberjar {:omit-source true
              :aot :all
              :uberjar-name "auth-server.jar"
              :source-paths ["env/prod/clj" ]
@@ -77,4 +78,6 @@
    :project/test {:jvm-opts ["-Dconf=test-config.edn" ]
                   :resource-paths ["env/test/resources"] }
    :profiles/dev {}
-   :profiles/test {}})
+   :profiles/test {}
+
+   :aliases {:client ["with-profile" "client" "run"]}})

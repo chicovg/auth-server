@@ -1,0 +1,64 @@
+#+TITLE: Todos
+
+* Spec
+https://tools.ietf.org/html/rfc6749
+
+* DONE login page
+ideally, I could use this for admins and users, lets see
+** DONE cancel button links to home
+** DONE tighten up users schema
+** DONE create admin user via repl
+** DONE POST credentials and redirect
+* STARTED authorization code flow
+actors:
+- resource owner (user)
+- user agent (browser)
+- auth-client (web app)
+- auth-server (service)
+** TODO example client
+- generate cljs-only client with cucumber tests
+- move files into same repo
+** DONE clients table
+** STARTED authorization endpoint
+- accepts get with following query params:
+  + response_type = 'code'
+  + client_id
+  + redirect_uri
+  + scope
+  + state - ?
+- validates params
+- redirects to a login page with confirmation
+- user inputs credentials
+- redirects back to original uri
+* TODO implicit grant flow
+actors:
+- resource owner (user)
+- user agent (browser)
+- auth-client (web app)
+- auth-server (service)
+** TODO add flow to example client
+
+* TODO data prepopulation
+- one admin user
+- one regular user
+- one client
+** TODO how?
+* TODO client registration UI
+admin -> registers client
+since I'm building my own client app, can't I just auto-register it?
+then I don't need to build the registation page right away
+** TODO get registration form
+** TODO registration endpoint
+* TODO Add users UI
+admin users can add other users
+* TODO example client app
+- CLJS only?
+- I can set this up an a separate namespace, add a lein profile to run it
+* TODO assertion token provider registration
+** TODO upload public key
+* TODO authorization endpoint
+** TODO authorization code flow
+1. need client id
+2. need login page
+3. need client app
+* TODO token endpoint

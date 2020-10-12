@@ -1,23 +1,18 @@
 (ns auth-server.routes.services
   (:require
-    [reitit.swagger :as swagger]
-    [reitit.swagger-ui :as swagger-ui]
-    [reitit.ring.coercion :as coercion]
-    [reitit.coercion.spec :as spec-coercion]
-    [reitit.ring.middleware.muuntaja :as muuntaja]
-    [reitit.ring.middleware.multipart :as multipart]
-    [reitit.ring.middleware.parameters :as parameters]
-    [auth-server.middleware.formats :as formats]
-    [auth-server.middleware.exception :as exception]
-    [ring.util.http-response :refer :all]
-    [clojure.java.io :as io]))
+   [reitit.swagger :as swagger]
+   [reitit.swagger-ui :as swagger-ui]
+   [reitit.ring.coercion :as coercion]
+   [reitit.coercion.spec :as spec-coercion]
+   [reitit.ring.middleware.muuntaja :as muuntaja]
+   [reitit.ring.middleware.multipart :as multipart]
+   [reitit.ring.middleware.parameters :as parameters]
+   [auth-server.middleware.formats :as formats]
+   [auth-server.middleware.exception :as exception]
+   [ring.util.response :refer [redirect]]
+   [ring.util.http-response :refer [bad-request ok]]
+   [clojure.spec.alpha :as s]))
 
-; Spec
-; https://tools.ietf.org/html/rfc6749
-;
-; TODO authorization endpoint
-; TODO token endpoint
-;
 (defn service-routes []
   ["/api"
    {:coercion spec-coercion/coercion
@@ -50,48 +45,67 @@
 
     ["/api-docs/*"
      {:get (swagger-ui/create-swagger-ui-handler
-             {:url "/api/swagger.json"
-              :config {:validator-url nil}})}]]
+            {:url "/api/swagger.json"
+             :config {:validator-url nil}})}]]
 
    ["/ping"
     {:get (constantly (ok {:message "pong"}))}]
-   
 
-   ["/math"
-    {:swagger {:tags ["math"]}}
+   ;; authorization
+   ["/authorize" {:get {:summary "An endpoint used to request authorization of a user on behalf of a client"
+                        :parameters {:query {:response_type string?
+                                             :client_id string?
+                                             :redirect_uri (s/nilable string?)
+                                             :scope (s/nilable string?)
+                                             :state (s/nilable string?)}}
+                        :responses {302 nil
+                                    400 {:body {:error string?}}}
+                        :handler (fn [{{{:keys [response_type
+                                                client_id
+                                                redirect_uri
+                                                scope
+                                                state]} :query} :parameters}]
+                                   (cond
+                                       (not= "code" response_type) (bad-request {:error "response_type must be 'code'"})
+                                       (nil? client_id) (bad-request {:error "client_id is required"})
+                                       :else (redirect "/login")))}}]
 
-    ["/plus"
-     {:get {:summary "plus with spec query parameters"
-            :parameters {:query {:x int?, :y int?}}
-            :responses {200 {:body {:total pos-int?}}}
-            :handler (fn [{{{:keys [x y]} :query} :parameters}]
-                       {:status 200
-                        :body {:total (+ x y)}})}
-      :post {:summary "plus with spec body parameters"
-             :parameters {:body {:x int?, :y int?}}
-             :responses {200 {:body {:total pos-int?}}}
-             :handler (fn [{{{:keys [x y]} :body} :parameters}]
-                        {:status 200
-                         :body {:total (+ x y)}})}}]]
+   ;; ["/math"
+   ;;  {:swagger {:tags ["math"]}}
 
-   ["/files"
-    {:swagger {:tags ["files"]}}
+   ;;  ["/plus"
+   ;;   {:get {:summary "plus with spec query parameters"
+   ;;          :parameters {:query {:x int?, :y int?}}
+   ;;          :responses {200 {:body {:total pos-int?}}}
+   ;;          :handler (fn [{{{:keys [x y]} :query} :parameters}]
+   ;;                     {:status 200
+   ;;                      :body {:total (+ x y)}})}
+   ;;    :post {:summary "plus with spec body parameters"
+   ;;           :parameters {:body {:x int?, :y int?}}
+   ;;           :responses {200 {:body {:total pos-int?}}}
+   ;;           :handler (fn [{{{:keys [x y]} :body} :parameters}]
+   ;;                      {:status 200
+   ;;                       :body {:total (+ x y)}})}}]]
 
-    ["/upload"
-     {:post {:summary "upload a file"
-             :parameters {:multipart {:file multipart/temp-file-part}}
-             :responses {200 {:body {:name string?, :size int?}}}
-             :handler (fn [{{{:keys [file]} :multipart} :parameters}]
-                        {:status 200
-                         :body {:name (:filename file)
-                                :size (:size file)}})}}]
+   ;; ["/files"
+   ;;  {:swagger {:tags ["files"]}}
 
-    ["/download"
-     {:get {:summary "downloads a file"
-            :swagger {:produces ["image/png"]}
-            :handler (fn [_]
-                       {:status 200
-                        :headers {"Content-Type" "image/png"}
-                        :body (-> "public/img/warning_clojure.png"
-                                  (io/resource)
-                                  (io/input-stream))})}}]]])
+   ;;  ["/upload"
+   ;;   {:post {:summary "upload a file"
+   ;;           :parameters {:multipart {:file multipart/temp-file-part}}
+   ;;           :responses {200 {:body {:name string?, :size int?}}}
+   ;;           :handler (fn [{{{:keys [file]} :multipart} :parameters}]
+   ;;                      {:status 200
+   ;;                       :body {:name (:filename file)
+   ;;                              :size (:size file)}})}}]
+
+   ;;  ["/download"
+   ;;   {:get {:summary "downloads a file"
+   ;;          :swagger {:produces ["image/png"]}
+   ;;          :handler (fn [_]
+   ;;                     {:status 200
+   ;;                      :headers {"Content-Type" "image/png"}
+   ;;                      :body (-> "public/img/warning_clojure.png"
+   ;;                                (io/resource)
+   ;;                                (io/input-stream))})}}]]
+   ])

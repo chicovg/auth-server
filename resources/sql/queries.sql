@@ -1,21 +1,28 @@
 -- :name create-user! :! :n
 -- :doc creates a new user record
 INSERT INTO users
-(id, first_name, last_name, email, pass)
-VALUES (:id, :first_name, :last_name, :email, :pass)
+(username, password, admin, last_login, is_active)
+VALUES
+(:username, :password, :admin, CURRENT_TIMESTAMP, true)
 
--- :name update-user! :! :n
--- :doc updates an existing user record
+-- :name update-user-last-login! :! :n
+-- :doc updates the last_login field of the specified user
 UPDATE users
-SET first_name = :first_name, last_name = :last_name, email = :email
-WHERE id = :id
+SET last_login = CURRENT_TIMESTAMP
+WHERE username = :username
+
+-- :name update-user-is-active! :! :n
+-- :doc updates the is_active field of the specified user
+UPDATE users
+SET is_active = :is_active
+WHERE username = :username
 
 -- :name get-user :? :1
--- :doc retrieves a user record given the id
+-- :doc retrieves a user record given the username
 SELECT * FROM users
-WHERE id = :id
+WHERE username = :username
 
 -- :name delete-user! :! :n
 -- :doc deletes a user record given the id
 DELETE FROM users
-WHERE id = :id
+WHERE username = :username

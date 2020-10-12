@@ -17,15 +17,19 @@
                  #'auth-server.handler/app-routes)
     (f)))
 
-
 (deftest test-app
-  (testing "main route redirects to swagger docs"
+  (testing "main route"
     (let [response ((app) (request :get "/"))]
-      (is (= 301 (:status response)))))
+      (is (= 200 (:status response)))))
+
+  (testing "login route"
+    (let [response ((app) (request :get "/login"))]
+      (is (= 200 (:status response)))))
 
   (testing "not-found route"
     (let [response ((app) (request :get "/invalid"))]
       (is (= 404 (:status response)))))
+
   (testing "services"
 
     (testing "success"
