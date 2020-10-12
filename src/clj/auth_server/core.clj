@@ -1,22 +1,23 @@
 (ns auth-server.core
   (:require
-    [auth-server.handler :as handler]
-    [auth-server.nrepl :as nrepl]
-    [luminus.http-server :as http]
-    [luminus-migrations.core :as migrations]
-    [auth-server.config :refer [env]]
-    [clojure.tools.cli :refer [parse-opts]]
-    [clojure.tools.logging :as log]
-    [mount.core :as mount])
+   [auth-server.handler :as handler]
+   [auth-server.nrepl :as nrepl]
+   [example-client.handler :as client-handler]
+   [luminus.http-server :as http]
+   [luminus-migrations.core :as migrations]
+   [auth-server.config :refer [env]]
+   [clojure.tools.cli :refer [parse-opts]]
+   [clojure.tools.logging :as log]
+   [mount.core :as mount])
   (:gen-class))
 
 ;; log uncaught exceptions in threads
 (Thread/setDefaultUncaughtExceptionHandler
-  (reify Thread$UncaughtExceptionHandler
-    (uncaughtException [_ thread ex]
-      (log/error {:what :uncaught-exception
-                  :exception ex
-                  :where (str "Uncaught exception on" (.getName thread))}))))
+ (reify Thread$UncaughtExceptionHandler
+   (uncaughtException [_ thread ex]
+     (log/error {:what :uncaught-exception
+                 :exception ex
+                 :where (str "Uncaught exception on" (.getName thread))}))))
 
 (def cli-options
   [["-p" "--port PORT" "Port number"
@@ -25,12 +26,31 @@
 (mount/defstate ^{:on-reload :noop} http-server
   :start
   (http/start
-    (-> env
-        (update :io-threads #(or % (* 2 (.availableProcessors (Runtime/getRuntime))))) 
-        (assoc  :handler (handler/app))
-        (update :port #(or (-> env :options :port) %))))
+   (-> env
+       (update :io-threads #(or % (* 2 (.availableProcessors (Runtime/getRuntime)))))
+       (assoc  :handler (handler/app))
+       (update :port #(or (-> env :options :port) %))))
   :stop
   (http/stop http-server))
+
+(mount/defstate ^{:on-reload :noop} client-http-server1
+  :start
+  (http/start {:io-threads (* 2 (.availableProcessors (Runtime/getRuntime)))
+               :handler (client-handler/client)
+               :port 4000})
+  :stop
+  (http/stop client-http-server1))
+
+(mount/defstate ^{:on-reload :noop} client-http-server
+  :start
+  (when (-> env :options :example-client)
+    (prn (:example-client env))
+    (http/start {:io-threads (* 2 (.availableProcessors (Runtime/getRuntime)))
+                 :handler (client-handler/client)
+                 :port (-> env :options :example-client :port)}))
+  :stop
+  (when (-> env :options :example-client)
+    (http/stop client-http-server)))
 
 (mount/defstate ^{:on-reload :noop} repl-server
   :start
@@ -40,7 +60,6 @@
   :stop
   (when repl-server
     (nrepl/stop repl-server)))
-
 
 (defn stop-app []
   (doseq [component (:stopped (mount/stop))]
@@ -72,4 +91,3 @@
       (System/exit 0))
     :else
     (start-app args)))
-  

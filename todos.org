@@ -15,8 +15,12 @@ actors:
 - user agent (browser)
 - auth-client (web app)
 - auth-server (service)
-** TODO example client
+** DONE example client
 - generate cljs-only client with cucumber tests
+  this seems very complex - can I do this without cljs?
+  - I just need a ui server with maybe 2 routes:
+    - home
+    - protected
 - move files into same repo
 ** DONE clients table
 ** STARTED authorization endpoint
@@ -30,6 +34,7 @@ actors:
 - redirects to a login page with confirmation
 - user inputs credentials
 - redirects back to original uri
+** TODO login button
 * TODO implicit grant flow
 actors:
 - resource owner (user)
