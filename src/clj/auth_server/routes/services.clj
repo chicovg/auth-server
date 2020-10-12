@@ -1,5 +1,7 @@
 (ns auth-server.routes.services
   (:require
+   [auth-server.middleware.formats :as formats]
+   [auth-server.middleware.exception :as exception]
    [reitit.swagger :as swagger]
    [reitit.swagger-ui :as swagger-ui]
    [reitit.ring.coercion :as coercion]
@@ -7,8 +9,6 @@
    [reitit.ring.middleware.muuntaja :as muuntaja]
    [reitit.ring.middleware.multipart :as multipart]
    [reitit.ring.middleware.parameters :as parameters]
-   [auth-server.middleware.formats :as formats]
-   [auth-server.middleware.exception :as exception]
    [ring.util.response :refer [redirect]]
    [ring.util.http-response :refer [bad-request ok]]
    [clojure.spec.alpha :as s]))
@@ -55,9 +55,7 @@
    ["/authorize" {:get {:summary "An endpoint used to request authorization of a user on behalf of a client"
                         :parameters {:query {:response_type string?
                                              :client_id string?
-                                             :redirect_uri (s/nilable string?)
-                                             :scope (s/nilable string?)
-                                             :state (s/nilable string?)}}
+                                             :redirect_uri string?}}
                         :responses {302 nil
                                     400 {:body {:error string?}}}
                         :handler (fn [{{{:keys [response_type
@@ -68,7 +66,7 @@
                                    (cond
                                        (not= "code" response_type) (bad-request {:error "response_type must be 'code'"})
                                        (nil? client_id) (bad-request {:error "client_id is required"})
-                                       :else (redirect "/login")))}}]
+                                       :else (redirect (str "/login?next=" redirect_uri))))}}]
 
    ;; ["/math"
    ;;  {:swagger {:tags ["math"]}}

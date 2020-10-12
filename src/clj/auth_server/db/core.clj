@@ -76,7 +76,7 @@
         (.setObject stmt idx (.createArrayOf conn elem-type (to-array v)))
         (.setObject stmt idx (clj->jsonb-pgobj v))))))
 
-(defn create-user-with-hashed-pw [username password admin]
+(defn create-user-with-hashed-pw! [username password admin]
   (create-user! *db* {:username username
                       :password (h/encrypt password)
                       :admin admin}))

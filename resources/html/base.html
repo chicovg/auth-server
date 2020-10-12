@@ -41,27 +41,9 @@
       </section>
 
     <!-- scripts -->
-      <script type="text/javascript">
-       (function() {
-           var burger = document.querySelector('.burger');
-           var nav = document.querySelector('#'+burger.dataset.target);
-           burger.addEventListener('click', function(){
-               burger.classList.toggle('is-active');
-               nav.classList.toggle('is-active');
-           });
-           document.addEventListener('DOMContentLoaded', () => {
-               (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
-                   var $notification = $delete.parentNode;
+    {% script "/js/app.js" %}
+    {% script "https://use.fontawesome.com/releases/v5.14.0/js/all.js" %}
 
-                   $delete.addEventListener('click', () => {
-                       $notification.parentNode.removeChild($notification);
-                   });
-               });
-           });
-       })();
-      </script>
-    <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
-   
     {% block page-scripts %}
     {% endblock %}
   </body>

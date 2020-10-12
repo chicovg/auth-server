@@ -40,13 +40,14 @@
 
 (defn get-page
   [template]
-  (fn [request] (render request template (:session request))))
+  (fn [request] (render request template (merge (:session request)
+                                                (:query-params request)))))
 
 (defn login-user [request]
   (let [{:keys [username password next]} (:params request)
         user (db/get-user *db* {:username username})]
     (if (h/check password (:password user))
-      (-> (redirect (or next "/"))
+      (-> (redirect (if (empty? next) "/" next))
           (assoc-in [:session] (-> (:session request)
                                    (assoc :identity (:username user)))))
       (render request "login.html" {:error "Invalid credentials provided"}))))
