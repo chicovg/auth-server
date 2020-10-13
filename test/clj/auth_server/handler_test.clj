@@ -1,11 +1,12 @@
 (ns auth-server.handler-test
   (:require
-    [clojure.test :refer :all]
-    [ring.mock.request :refer :all]
-    [auth-server.handler :refer :all]
-    [auth-server.middleware.formats :as formats]
-    [muuntaja.core :as m]
-    [mount.core :as mount]))
+   [clojure.test :refer :all]
+   [ring.mock.request :refer :all]
+   [auth-server.handler :refer :all]
+   [auth-server.middleware.formats :as formats]
+   [muuntaja.core :as m]
+   [mount.core :as mount]
+   [ring.util.codec :refer [url-decode url-encode]]))
 
 (defn parse-json [body]
   (m/decode formats/instance "application/json" body))
@@ -32,26 +33,40 @@
 
   (testing "services"
 
-    (testing "success"
-      (let [response ((app) (-> (request :post "/api/math/plus")
-                                (json-body {:x 10, :y 6})))]
-        (is (= 200 (:status response)))
-        (is (= {:total 16} (m/decode-response-body response)))))
+    (testing "authorize"
+      (let [response ((app) (request :get "/api/authorize" {:response_type "code"
+                                                            :client_id "test"
+                                                            :redirect_uri "http://localhost:3000/redirect?a-query=value"}))]
+        (is (= 302 (:status response)))
+        (is (= (str "http://localhost/login?next=" (url-encode "http://localhost:3000/redirect?a-query=value&code=test"))
+               (get-in response [:headers "Location"])))))
 
-    (testing "parameter coercion error"
-      (let [response ((app) (-> (request :post "/api/math/plus")
-                                (json-body {:x 10, :y "invalid"})))]
+    (testing "authorize redirect without query params"
+      (let [response ((app) (request :get "/api/authorize" {:response_type "code"
+                                                            :client_id "test"
+                                                            :redirect_uri "http://localhost:3000"}))]
+        (is (= 302 (:status response)))
+        (is (= (str "http://localhost/login?next=" (url-encode "http://localhost:3000?code=test"))
+               (get-in response [:headers "Location"])))))
+
+    (testing "authorize incorrect response type"
+      (let [response ((app) (request :get "/api/authorize" {:response_type "incorrect"
+                                                            :client_id "test"
+                                                            :redirect_uri "http://localhost:3000"}))]
         (is (= 400 (:status response)))))
 
-    (testing "response coercion error"
-      (let [response ((app) (-> (request :post "/api/math/plus")
-                                (json-body {:x -10, :y 6})))]
-        (is (= 500 (:status response)))))
+    (testing "authorize missing response type"
+      (let [response ((app) (request :get "/api/authorize" {:client_id "test"
+                                                            :redirect_uri "http://localhost:3000"}))]
+        (is (= 400 (:status response)))))
 
-    (testing "content negotiation"
-      (let [response ((app) (-> (request :post "/api/math/plus")
-                                (body (pr-str {:x 10, :y 6}))
-                                (content-type "application/edn")
-                                (header "accept" "application/transit+json")))]
-        (is (= 200 (:status response)))
-        (is (= {:total 16} (m/decode-response-body response)))))))
+    (testing "authorize missing client id"
+      (let [response ((app) (request :get "/api/authorize" {:response_type "code"
+                                                            :redirect_uri "http://localhost:3000"}))]
+        (is (= 400 (:status response)))))
+
+    (testing "authorize missing redirect uri"
+      (let [response ((app) (request :get "/api/authorize" {:response_type "code"
+                                                            :client_id "test"}))]
+        (is (= 400 (:status response)))))
+    ))

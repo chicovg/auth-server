@@ -33,23 +33,14 @@
   :stop
   (http/stop http-server))
 
-(mount/defstate ^{:on-reload :noop} client-http-server1
-  :start
-  (http/start {:io-threads (* 2 (.availableProcessors (Runtime/getRuntime)))
-               :handler (client-handler/client)
-               :port 4000})
-  :stop
-  (http/stop client-http-server1))
-
 (mount/defstate ^{:on-reload :noop} client-http-server
   :start
-  (when (-> env :options :example-client)
-    (prn (:example-client env))
+  (when (env :client-port)
     (http/start {:io-threads (* 2 (.availableProcessors (Runtime/getRuntime)))
                  :handler (client-handler/client)
-                 :port (-> env :options :example-client :port)}))
+                 :port (env :client-port)}))
   :stop
-  (when (-> env :options :example-client)
+  (when client-http-server
     (http/stop client-http-server)))
 
 (mount/defstate ^{:on-reload :noop} repl-server

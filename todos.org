@@ -34,7 +34,11 @@ actors:
 - redirects to a login page with confirmation
 - user inputs credentials
 - redirects back to original uri
-** TODO login button
+*** STARTED validate params
+*** STARTED validate client_id
+*** TODO build auth code
+** DONE login button
+** TODO user confirm access to app
 * TODO implicit grant flow
 actors:
 - resource owner (user)

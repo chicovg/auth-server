@@ -27,4 +27,6 @@
 
 (defn home-routes []
   [""
-   ["/" {:get (get-page "home.html")}]])
+   ["/" {:get (get-page "home.html")}]
+   ["/redirect" {:get (get-page "redirect.html")}]
+   ["/content" {:get (get-page "content.html")}]])
