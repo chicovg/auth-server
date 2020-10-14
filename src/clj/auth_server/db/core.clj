@@ -80,3 +80,8 @@
   (create-user! *db* {:username username
                       :password (h/encrypt password)
                       :admin admin}))
+
+(defn create-client-with-hashed-secret! [id secret description]
+  (create-client! *db* {:id id
+                       :secret (h/encrypt secret)
+                       :description description}))

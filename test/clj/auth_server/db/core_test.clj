@@ -1,11 +1,12 @@
 (ns auth-server.db.core-test
   (:require
+   [auth-server.config :refer [env]]
    [auth-server.db.core :refer [*db*] :as db]
+   [buddy.hashers :as h]
+   [clojure.test :refer :all]
    [java-time.pre-java8]
    [luminus-migrations.core :as migrations]
-   [clojure.test :refer :all]
    [next.jdbc :as jdbc]
-   [auth-server.config :refer [env]]
    [mount.core :as mount]))
 
 (use-fixtures
@@ -36,3 +37,14 @@
     (is (false? (-> (db/get-user t-conn {:username "ssmith"})
                     :is_active)))
     (is (= 1 (db/delete-user! t-conn {:username "ssmith"})))))
+
+(deftest test-clients
+  (jdbc/with-transaction [t-conn *db* {:rollback-only true}]
+    (is (= 1 (db/create-client! t-conn {:id "test"
+                                        :secret "test"
+                                        :description "Test"})))
+    (is (= {:id "test"
+            :secret "test"
+            :description "Test"}
+           (db/get-client t-conn {:id "test"})))
+    (is (= 1 (db/delete-client! t-conn {:id "test"})))))

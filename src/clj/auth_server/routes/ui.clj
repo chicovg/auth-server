@@ -1,15 +1,17 @@
 (ns auth-server.routes.ui
   (:require
+   [auth-server.routes.urls :refer [add-params-to-url]]
    [auth-server.db.core :refer [*db*] :as db]
    [buddy.hashers :as h]
+   [clojure.java.io :as io]
    [selmer.parser :as parser]
    [selmer.filters :as filters]
-   [ring.util.http-response :refer [content-type ok]]
+   [ring.util.http-response :refer [bad-request content-type ok]]
    [ring.util.response :refer [redirect]]
    [ring.util.anti-forgery :refer [anti-forgery-field]]
    [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]))
 
-(parser/set-resource-path!  (clojure.java.io/resource "html"))
+(parser/set-resource-path!  (io/resource "html"))
 (parser/add-tag! :csrf-field (fn [_ _] (anti-forgery-field)))
 
 (defn- render
@@ -43,17 +45,21 @@
   (fn [request] (render request template (merge (:session request)
                                                 (:query-params request)))))
 
-(defn login-user [request]
-  (let [{:keys [username password next]} (:params request)
-        user (db/get-user *db* {:username username})]
-    (if (h/check password (:password user))
-      (-> (redirect (if (empty? next) "/" next))
-          (assoc-in [:session] (-> (:session request)
-                                   (assoc :identity (:username user)))))
-      (render request "login.html" {:error "Invalid credentials provided"}))))
+(defn get-login-page
+  [request]
+  (let [client-data (db/get-client *db* {:id (get-in request [:params :client])})
+        params (-> (:params request)
+                   (assoc :client_description (:description client-data)))]
+    (render request "login.html" params)))
+
+(defn get-login-error-page
+  [request status error]
+  (-> request
+      (assoc-in [:params :error] error)
+      (get-login-page)
+      (assoc :status status)))
 
 (defn ui-routes []
   [""
    ["/" {:get (get-page "home.html")}]
-   ["/login" {:get (get-page "login.html")
-              :post login-user}]])
+   ["/login" {:get get-login-page}]])

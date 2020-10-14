@@ -1,7 +1,12 @@
 (ns auth-server.routes.services
   (:require
+   [auth-server.db.core :refer [*db*] :as db]
    [auth-server.middleware.formats :as formats]
    [auth-server.middleware.exception :as exception]
+   [auth-server.routes.ui :refer [get-login-error-page]]
+   [auth-server.routes.urls :refer [add-params-to-url base-url]]
+   [buddy.hashers :as h]
+   [buddy.sign.jwt :as jwt]
    [clojure.java.io :as io]
    [clojure.spec.alpha :as s]
    [clojure.string :as st]
@@ -15,8 +20,8 @@
    [reitit.ring.middleware.parameters :as parameters]
    [ring.util.codec :refer [url-decode url-encode]]
    [ring.util.response :refer [redirect]]
-   [ring.util.http-response :refer [bad-request ok]]
-   [reitit.ring :as ring]))
+   [ring.util.http-response :refer [bad-request ok]])
+  (:import (java.util Date)))
 
 (s/def ::response_type #(= % "code"))
 (s/def ::client_id string?)
@@ -29,6 +34,8 @@
 
 (s/def ::authorize-query-params (s/keys :req-un [::response_type ::client_id ::redirect_uri]
                                         :opt-un [::scope ::state]))
+
+(s/def ::login-query-params (s/keys :opt-un [::redirect_uri]))
 
 (defn param [key value]
   (str key "=" value))
@@ -76,24 +83,34 @@
                         :parameters {:query ::authorize-query-params}
                         :responses {302 nil
                                     400 {:body {:error string?}}}
-                        :handler (fn [{{{:keys [response_type
-                                                client_id
-                                                redirect_uri
-                                                scope
-                                                state]} :query} :parameters}]
-                                   (let [url (-> redirect_uri url-decode io/as-url)
-                                         query (.getQuery url)
-                                         updated-query (as-> (or query "") $
-                                                         (st/split $ #"&")
-                                                         (conj $ (param "code" "test"))
-                                                         (filter not-empty $)
-                                                         (st/join "&" $))
-                                         updated-url (str (.getProtocol url) "://"
-                                                          (.getHost url)
-                                                          (when (.getPort url) (str ":" (.getPort url)))
-                                                          (when (.getPath url) (.getPath url))
-                                                          "?" updated-query)]
-                                     (redirect (str "/login?next=" (url-encode updated-url)))))}}]
+                        :handler (fn [{{{:keys [client_id redirect_uri]} :query} :parameters}]
+                                   (if (nil? (db/get-client *db* {:id client_id}))
+                                     {:status 422 :body "Invalid client id"}
+                                     (redirect (str "/login?client=" client_id
+                                                    "&type=code"
+                                                    "&redirect_uri=" (url-encode redirect_uri)))))}}]
+
+   ["/login" {:post {:summary "An endpoint which validates user credentials and redirects to approprate page"
+                     :parameters {}
+                     :responses {302 nil
+                                 400 {:body {:error string?}}}
+                     :handler (fn [{{:keys [username password client redirect_uri type]} :params :as request}]
+                                (let [user (db/get-user {:username username})
+                                      next_uri (or redirect_uri (base-url request))
+                                      iat (.getTime (new Date))
+                                      exp (+ iat (* 10 60 1000))]
+                                  (if (h/check password (:password user))
+                                    (case type
+                                      "code"
+                                      (-> (add-params-to-url next_uri {:code (jwt/sign {:sub username
+                                                                                        :client_id client
+                                                                                        :iat iat
+                                                                                        :exp exp}
+                                                                                       "secret")})
+                                          (redirect))
+                                      (-> (redirect next_uri)
+                                          (assoc-in [:session :identity] username)))
+                                    (get-login-error-page request 401 "Invalid credentials"))))}}]
 
    ;; ["/math"
    ;;  {:swagger {:tags ["math"]}}

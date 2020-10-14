@@ -26,3 +26,20 @@ WHERE username = :username
 -- :doc deletes a user record given the id
 DELETE FROM users
 WHERE username = :username
+
+-- :name create-client! :! :n
+-- :doc creates a new client record
+INSERT INTO clients
+(id, secret, description)
+VALUES
+(:id, :secret, :description)
+
+-- :name get-client :? :1
+-- :doc retrieves a client by client id
+SELECT * FROM clients
+WHERE id = :id
+
+-- :name delete-client! :! :n
+-- :doc deletes a client record given the id
+DELETE FROM clients
+WHERE id = :id

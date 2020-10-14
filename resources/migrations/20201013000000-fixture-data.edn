@@ -1,0 +1,3 @@
+{:ns auth-server.db.migrations
+ :up-fn fixture-data-up
+ :down-fn fixture-data-down}

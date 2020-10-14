@@ -23,7 +23,7 @@ actors:
     - protected
 - move files into same repo
 ** DONE clients table
-** STARTED authorization endpoint
+** DONE authorization endpoint
 - accepts get with following query params:
   + response_type = 'code'
   + client_id
@@ -34,11 +34,13 @@ actors:
 - redirects to a login page with confirmation
 - user inputs credentials
 - redirects back to original uri
-*** STARTED validate params
-*** STARTED validate client_id
-*** TODO build auth code
+*** DONE validate params
+*** DONE validate client_id
+*** DONE build auth code
+** TODO token endpoint
 ** DONE login button
-** TODO user confirm access to app
+** DONE login page
+*** DONE user confirm access to app
 * TODO implicit grant flow
 actors:
 - resource owner (user)

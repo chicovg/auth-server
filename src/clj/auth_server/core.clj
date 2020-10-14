@@ -8,7 +8,8 @@
    [auth-server.config :refer [env]]
    [clojure.tools.cli :refer [parse-opts]]
    [clojure.tools.logging :as log]
-   [mount.core :as mount])
+   [mount.core :as mount]
+   [auth-server.db.core :refer [*db*] :as db])
   (:gen-class))
 
 ;; log uncaught exceptions in threads

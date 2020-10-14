@@ -4,10 +4,10 @@
   {% if error %}
   <div class="notification is-danger">
       <button class="delete"></button>
-      {{ error }}
+      {{error}}
   </div>
   {% endif %}
-  <form method="post" action="/login">
+  <form method="post" action="/api/login">
       <div class="field">
           <label class="label" for="username">Username</label>
           <div class="control has-icons-left">
@@ -26,7 +26,23 @@
               </span>
           </div>
       </div>
-      <input type="text" name="next" value="{{ next }}" hidden="true" />
+      {% if client_description %}
+          <div class="field">
+              <label class="checkbox">
+                  <input type="checkbox" name="conform-client-access" required=true>
+                  Allow <strong>{{client_description}}</strong> to access my account.
+              </label>
+          </div>
+      {% endif %}
+      {% if client %}
+          <input type="text" name="client" value="{{client}}" hidden="true" />
+      {% endif %}
+      {% if redirect_uri %}
+          <input type="text" name="redirect_uri" value="{{redirect_uri}}" hidden="true" />
+      {% endif %}
+      {% if type %}
+          <input type="text" name="type" value="{{type}}" hidden="true" />
+      {% endif %}
       <button class="button is-primary">Submit</button>
       <a class="button" href="/">Cancel</a>
   </form>
