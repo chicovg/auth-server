@@ -40,20 +40,26 @@
 (deftest test-authorize
   (testing "redirects to login"
     (let [response ((app) (request :get "/api/authorize" {:response_type "code"
-                                                          :client_id "test"
+                                                          :client_id "dev-client"
                                                           :redirect_uri "http://localhost:3000/redirect?a-query=value"}))]
       (is (= 302 (:status response)))
-      (is (= (str "http://localhost/login?client=test&type=code&redirect_uri=" (url-encode "http://localhost:3000/redirect?a-query=value"))
+      (is (= (str "http://localhost/login?client_id=dev-client&type=code&redirect_uri=" (url-encode "http://localhost:3000/redirect?a-query=value"))
              (get-in response [:headers "Location"])))))
+
+  (testing "authorize invalid client_id"
+    (let [response ((app) (request :get "/api/authorize" {:response_type "code"
+                                                          :client_id "test"
+                                                          :redirect_uri "http://localhost:3000"}))]
+      (is (= 401 (:status response)))))
 
   (testing "authorize incorrect response type"
     (let [response ((app) (request :get "/api/authorize" {:response_type "incorrect"
-                                                          :client_id "test"
+                                                          :client_id "dev-client"
                                                           :redirect_uri "http://localhost:3000"}))]
       (is (= 400 (:status response)))))
 
   (testing "authorize missing response type"
-    (let [response ((app) (request :get "/api/authorize" {:client_id "test"
+    (let [response ((app) (request :get "/api/authorize" {:client_id "dev-client"
                                                           :redirect_uri "http://localhost:3000"}))]
       (is (= 400 (:status response)))))
 
@@ -64,7 +70,7 @@
 
   (testing "authorize missing redirect uri"
     (let [response ((app) (request :get "/api/authorize" {:response_type "code"
-                                                          :client_id "test"}))]
+                                                          :client_id "dev-client"}))]
       (is (= 400 (:status response))))))
 
 (deftest test-login
@@ -80,10 +86,17 @@
                                                        :password "whoops"}))]
       (is (= 401 (:status response)))))
 
+  (testing "invalid client id fails"
+    (let [response ((app) (request :post "/api/login" {:username "user"
+                                                       :password "pass"
+                                                       :type "code"
+                                                       :client_id "incorrect"}))]
+      (is (= 401 (:status response)))))
+
   (testing "generates an auth code"
     (let [response ((app) (request :post "/api/login" {:username "user"
                                                        :password "pass"
-                                                       :client "client"
+                                                       :client_id "dev-client"
                                                        :type "code"
                                                        :redirect_uri "http://host:8080/path"}))]
       (is (= 302 (:status response)))

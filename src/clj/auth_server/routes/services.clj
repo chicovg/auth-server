@@ -31,11 +31,15 @@
                                 (catch Throwable t false))))
 (s/def ::scope string?)
 (s/def ::state string?)
+(s/def ::username string?)
+(s/def ::password string?)
+(s/def ::type #{"code"})
 
 (s/def ::authorize-query-params (s/keys :req-un [::response_type ::client_id ::redirect_uri]
                                         :opt-un [::scope ::state]))
 
-(s/def ::login-query-params (s/keys :opt-un [::redirect_uri]))
+(s/def ::login-form-params (s/keys :req-un [::username ::password]
+                                   :opt-un [::redirect_uri ::type]))
 
 (defn param [key value]
   (str key "=" value))
@@ -84,9 +88,10 @@
                         :responses {302 nil
                                     400 {:body {:error string?}}}
                         :handler (fn [{{{:keys [client_id redirect_uri]} :query} :parameters}]
-                                   (if (nil? (db/get-client *db* {:id client_id}))
-                                     {:status 422 :body "Invalid client id"}
-                                     (redirect (str "/login?client=" client_id
+                                   (if (nil? (db/get-client {:id client_id}))
+                                     {:status 401 :body "Invalid client id"}
+                                     (redirect (str "/login"
+                                                    "?client_id=" client_id
                                                     "&type=code"
                                                     "&redirect_uri=" (url-encode redirect_uri)))))}}]
 
@@ -94,23 +99,29 @@
                      :parameters {}
                      :responses {302 nil
                                  400 {:body {:error string?}}}
-                     :handler (fn [{{:keys [username password client redirect_uri type]} :params :as request}]
+                     :handler (fn [{{:keys [username password client_id redirect_uri type]} :params :as request}]
                                 (let [user (db/get-user {:username username})
                                       next_uri (or redirect_uri (base-url request))
                                       iat (.getTime (new Date))
                                       exp (+ iat (* 10 60 1000))]
-                                  (if (h/check password (:password user))
-                                    (case type
-                                      "code"
-                                      (-> (add-params-to-url next_uri {:code (jwt/sign {:sub username
-                                                                                        :client_id client
-                                                                                        :iat iat
-                                                                                        :exp exp}
-                                                                                       "secret")})
-                                          (redirect))
-                                      (-> (redirect next_uri)
-                                          (assoc-in [:session :identity] username)))
-                                    (get-login-error-page request 401 "Invalid credentials"))))}}]
+                                  (cond
+                                    (not (h/check password (:password user)))
+                                    (get-login-error-page request 401 "Invalid credentials")
+
+                                    (and (not (nil? type)) (nil? (db/get-client {:id client_id})))
+                                    (get-login-error-page request 401 "Invalid client id")
+
+                                    (= type "code")
+                                    (-> (add-params-to-url next_uri {:code (jwt/sign {:sub username
+                                                                                      :client_id client_id
+                                                                                      :iat iat
+                                                                                      :exp exp}
+                                                                                     "secret")})
+                                        (redirect))
+
+                                    :else
+                                    (-> (redirect next_uri)
+                                        (assoc-in [:session :identity] username)))))}}]
 
    ;; ["/math"
    ;;  {:swagger {:tags ["math"]}}

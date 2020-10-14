@@ -45,9 +45,10 @@
   (fn [request] (render request template (merge (:session request)
                                                 (:query-params request)))))
 
+;; TODO need a default client id for ui only logins OR do I skip that validation?
 (defn get-login-page
   [request]
-  (let [client-data (db/get-client *db* {:id (get-in request [:params :client])})
+  (let [client-data (db/get-client *db* {:id (get-in request [:params :client_id])})
         params (-> (:params request)
                    (assoc :client_description (:description client-data)))]
     (render request "login.html" params)))
