@@ -4,14 +4,12 @@
    [auth-server.middleware.formats :as formats]
    [auth-server.middleware.exception :as exception]
    [auth-server.routes.schema :as schema]
+   [auth-server.routes.tokens :refer [sign-token unsign-token expired?]]
    [auth-server.routes.ui :refer [get-login-error-page]]
    [auth-server.routes.urls :refer [add-params-to-url base-url]]
    [buddy.hashers :as h]
    [buddy.sign.jwt :as jwt]
-   [clojure.java.io :as io]
    [clojure.spec.alpha :as s]
-   [clojure.string :as st]
-   [reitit.core :as r]
    [reitit.swagger :as swagger]
    [reitit.swagger-ui :as swagger-ui]
    [reitit.ring.coercion :as coercion]
@@ -94,11 +92,9 @@
                                     (get-login-error-page request 401 "Invalid client id")
 
                                     (= type "code")
-                                    (-> (add-params-to-url next_uri {:code (jwt/sign {:sub username
-                                                                                      :client_id client_id
-                                                                                      :iat iat
-                                                                                      :exp exp}
-                                                                                     "secret")})
+                                    (-> (add-params-to-url next_uri {:code (sign-token {:sub username
+                                                                                        :client_id client_id}
+                                                                                       10)})
                                         (redirect))
 
                                     :else
@@ -114,59 +110,26 @@
                                 (case grant_type
                                   "authorization_code"
                                   (let [data (try
-                                               (jwt/unsign code "secret")
+                                               (unsign-token code)
                                                (catch Throwable t {}))]
                                     (prn data)
                                     (cond
                                       (not (s/valid? ::schema/authorization-code data))
-                                      (unauthorized {:error "Invalid authorization code"})
+                                      (bad-request {:error "Invalid authorization code"})
+
+                                      (nil? (db/get-client {:id (:client_id data)}))
+                                      (unauthorized {:error "Unauthorized client"})
+
+                                      (nil? (db/get-user {:username (:sub data)}))
+                                      (unauthorized {:error "Unauthorized user"})
+
+                                      (expired? data)
+                                      (unauthorized {:error "Token expired"})
 
                                       :else
-                                      (let [iat (.getTime (new Date))
-                                            exp (+ iat (* 30 60 1000))
-                                            token (jwt/sign (merge (select-keys data [:sub :client_id])
-                                                                   {:iat iat :exp exp})
-                                                            "secret")]
-                                        (ok {:access_token token :expires_in exp}))))
+                                      (let [token (sign-token (select-keys data [:sub :client_id]) 30)]
+                                        (ok {:access_token token :expires_in (* 30 60 1000)}))))
 
                                   (not-implemented {:error (str "grant_type: " grant_type " valid but not yet implemented")})))}}]
 
-   ;; ["/math"
-   ;;  {:swagger {:tags ["math"]}}
-
-   ;;  ["/plus"
-   ;;   {:get {:summary "plus with spec query parameters"
-   ;;          :parameters {:query {:x int?, :y int?}}
-   ;;          :responses {200 {:body {:total pos-int?}}}
-   ;;          :handler (fn [{{{:keys [x y]} :query} :parameters}]
-   ;;                     {:status 200
-   ;;                      :body {:total (+ x y)}})}
-   ;;    :post {:summary "plus with spec body parameters"
-   ;;           :parameters {:body {:x int?, :y int?}}
-   ;;           :responses {200 {:body {:total pos-int?}}}
-   ;;           :handler (fn [{{{:keys [x y]} :body} :parameters}]
-   ;;                      {:status 200
-   ;;                       :body {:total (+ x y)}})}}]]
-
-   ;; ["/files"
-   ;;  {:swagger {:tags ["files"]}}
-
-   ;;  ["/upload"
-   ;;   {:post {:summary "upload a file"
-   ;;           :parameters {:multipart {:file multipart/temp-file-part}}
-   ;;           :responses {200 {:body {:name string?, :size int?}}}
-   ;;           :handler (fn [{{{:keys [file]} :multipart} :parameters}]
-   ;;                      {:status 200
-   ;;                       :body {:name (:filename file)
-   ;;                              :size (:size file)}})}}]
-
-   ;;  ["/download"
-   ;;   {:get {:summary "downloads a file"
-   ;;          :swagger {:produces ["image/png"]}
-   ;;          :handler (fn [_]
-   ;;                     {:status 200
-   ;;                      :headers {"Content-Type" "image/png"}
-   ;;                      :body (-> "public/img/warning_clojure.png"
-   ;;                                (io/resource)
-   ;;                                (io/input-stream))})}}]]
    ])

@@ -9,7 +9,7 @@ ideally, I could use this for admins and users, lets see
 ** DONE tighten up users schema
 ** DONE create admin user via repl
 ** DONE POST credentials and redirect
-* STARTED authorization code flow
+* DONE authorization code flow
 actors:
 - resource owner (user)
 - user agent (browser)
@@ -37,7 +37,7 @@ actors:
 *** DONE validate params
 *** DONE validate client_id
 *** DONE build auth code
-** TODO token endpoint
+** DONE token endpoint
 ** DONE login button
 ** DONE login page
 *** DONE user confirm access to app
@@ -49,11 +49,11 @@ actors:
 - auth-server (service)
 ** TODO add flow to example client
 
-* TODO data prepopulation
+* DONE data prepopulation
 - one admin user
 - one regular user
 - one client
-** TODO how?
+** DONE how?
 * TODO client registration UI
 admin -> registers client
 since I'm building my own client app, can't I just auto-register it?
