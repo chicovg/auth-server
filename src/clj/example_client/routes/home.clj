@@ -1,9 +1,7 @@
 (ns example-client.routes.home
   (:require
-   [auth-server.db.core :refer [*db*] :as db]
-   [buddy.hashers :as h]
+   [auth-server.db.core :as db]
    [selmer.parser :as parser]
-   [selmer.filters :as filters]
    [ring.util.http-response :refer [content-type ok]]
    [ring.util.response :refer [redirect]]
    [ring.util.anti-forgery :refer [anti-forgery-field]]

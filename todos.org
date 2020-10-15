@@ -9,21 +9,30 @@ ideally, I could use this for admins and users, lets see
 ** DONE tighten up users schema
 ** DONE create admin user via repl
 ** DONE POST credentials and redirect
-* DONE authorization code flow
+* STARTED example client app
+** DONE landing page
+** TODO protected page
+- should request user data
+- get /api/user
+  name, email, address, phone
+*** TODO user details in table
+*** TODO user api
+* STARTED Oauth flows
+** DONE authorization code flow
 actors:
 - resource owner (user)
 - user agent (browser)
 - auth-client (web app)
 - auth-server (service)
-** DONE example client
+*** DONE example client
 - generate cljs-only client with cucumber tests
   this seems very complex - can I do this without cljs?
   - I just need a ui server with maybe 2 routes:
     - home
     - protected
 - move files into same repo
-** DONE clients table
-** DONE authorization endpoint
+*** DONE clients table
+*** DONE authorization endpoint
 - accepts get with following query params:
   + response_type = 'code'
   + client_id
@@ -34,26 +43,21 @@ actors:
 - redirects to a login page with confirmation
 - user inputs credentials
 - redirects back to original uri
-*** DONE validate params
-*** DONE validate client_id
-*** DONE build auth code
-** DONE token endpoint
-** DONE login button
-** DONE login page
-*** DONE user confirm access to app
-* TODO implicit grant flow
+**** DONE validate params
+**** DONE validate client_id
+**** DONE build auth code
+*** DONE token endpoint
+*** DONE login button
+*** DONE login page
+**** DONE user confirm access to app
+** TODO implicit grant flow
 actors:
 - resource owner (user)
 - user agent (browser)
 - auth-client (web app)
 - auth-server (service)
-** TODO add flow to example client
-
-* DONE data prepopulation
-- one admin user
-- one regular user
-- one client
-** DONE how?
+** TODO resource owner credentials flow
+** DONE client credentials flow
 * TODO client registration UI
 admin -> registers client
 since I'm building my own client app, can't I just auto-register it?
@@ -62,14 +66,3 @@ then I don't need to build the registation page right away
 ** TODO registration endpoint
 * TODO Add users UI
 admin users can add other users
-* TODO example client app
-- CLJS only?
-- I can set this up an a separate namespace, add a lein profile to run it
-* TODO assertion token provider registration
-** TODO upload public key
-* TODO authorization endpoint
-** TODO authorization code flow
-1. need client id
-2. need login page
-3. need client app
-* TODO token endpoint

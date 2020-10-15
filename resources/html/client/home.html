@@ -8,31 +8,10 @@
           <p>Demostrates the <a href="https://tools.ietf.org/html/rfc6749#section-4.1">Authorization Code</a> grant type.</p>
           <button id="authorization-code" class="button is-primary">Login</button>
       </div>
+      <div class="box">
+          <p class="title">Client Credentials</p>
+          <p>Demostrates the <a href="https://tools.ietf.org/html/rfc6749#section-4.4">Client Credentials</a> grant type.</p>
+          <button id="client-credentials" class="button is-primary">Login</button>
+      </div>
   </div>
-{% endblock %}
-{% block page-scripts %}
-  <script type="text/javascript">
-   (function() {
-       var clientId = 'dev-client';
-       var authorizeEndpoint = 'http://localhost:3000/api/authorize';
-       var redirectUri = 'http://localhost:4000/redirect';
-
-       var authCodeButton = document.getElementById('authorization-code');
-       var uri = authorizeEndpoint + '?response_type=code&client_id=' + clientId + "&redirect_uri=" + redirectUri;
-
-       authCodeButton.addEventListener('click', function() {
-           fetch(uri)
-               .then(function(response) {
-                   if (response.redirected) {
-                       window.location = response.url;
-                   } else {
-                       throw Error('Something went wrong, there should have been a redirect');
-                   }
-               })
-               .catch(function(error) {
-                   console.log(error);
-               });
-       });
-   })();
-  </script>
 {% endblock %}

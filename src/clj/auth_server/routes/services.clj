@@ -1,6 +1,7 @@
 (ns auth-server.routes.services
   (:require
-   [auth-server.db.core :refer [*db*] :as db]
+   [auth-server.db.core :as db]
+   [auth-server.middleware :refer [wrap-restricted]]
    [auth-server.middleware.formats :as formats]
    [auth-server.middleware.exception :as exception]
    [auth-server.routes.schema :as schema]
@@ -8,7 +9,6 @@
    [auth-server.routes.ui :refer [get-login-error-page]]
    [auth-server.routes.urls :refer [add-params-to-url base-url]]
    [buddy.hashers :as h]
-   [buddy.sign.jwt :as jwt]
    [clojure.spec.alpha :as s]
    [reitit.swagger :as swagger]
    [reitit.swagger-ui :as swagger-ui]
@@ -104,20 +104,24 @@
    ["/token" {:post {:summary "An endpoint which validates an authorization grant and returns a token"
                      :swagger {:consumes ["application/x-www-form-urlencoded"]
                                :produces ["application/json"]}
+                     :middleware [wrap-restricted]
                      :parameters {:form ::schema/token-form-params}
                      :responses {200 {:body ::schema/token-response-body}}
-                     :handler (fn [{{:keys [code grant_type redirect_uri client_id]} :params}]
-                                (case grant_type
+                     :handler (fn [{:keys [headers identity params]}]
+                                (case (:grant_type params)
                                   "authorization_code"
-                                  (let [data (try
+                                  (let [code (:code params)
+                                        data (try
                                                (unsign-token code)
                                                (catch Throwable t {}))]
-                                    (prn data)
                                     (cond
+                                      (not (s/valid? ::schema/token-from-auth-code-params params))
+                                      (bad-request {:error "Invalid request params"})
+
                                       (not (s/valid? ::schema/authorization-code data))
                                       (bad-request {:error "Invalid authorization code"})
 
-                                      (nil? (db/get-client {:id (:client_id data)}))
+                                      (not (= identity (:client_id data)))
                                       (unauthorized {:error "Unauthorized client"})
 
                                       (nil? (db/get-user {:username (:sub data)}))
@@ -127,9 +131,14 @@
                                       (unauthorized {:error "Token expired"})
 
                                       :else
-                                      (let [token (sign-token (select-keys data [:sub :client_id]) 30)]
-                                        (ok {:access_token token :expires_in (* 30 60 1000)}))))
+                                      (ok {:access_token (sign-token (select-keys data [:sub :client_id]) 30)
+                                           :expires_in (* 30 60 1000)})))
 
-                                  (not-implemented {:error (str "grant_type: " grant_type " valid but not yet implemented")})))}}]
+                                  "client_credentials"
+                                  (ok {:access_token (sign-token {:client_id identity} 30)
+                                       :expires_in (* 30 60 100)})
+
+
+                                  (not-implemented {:error (str "grant_type valid but not yet implemented")})))}}]
 
    ])
