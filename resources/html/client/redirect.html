@@ -8,17 +8,36 @@
 {% block page-scripts %}
   <script type="text/javascript">
    (function() {
-       var params = {};
-
-       window.location.search
-             .substring(1)
-             .split('&')
-             .forEach(function(param){
-                 var kv = param.split('=');
-                 params[kv[0]] = kv[1];
-             });
-
+       var clientId = 'dev-client';
        var tokenEndpoint = 'http://localhost:3000/api/token';
+       var params = new URLSearchParams(window.location.search);
+       var formData = new URLSearchParams();
+
+       formData.append('client_id', clientId);
+       formData.append('code', params.get('code'));
+       formData.append('grant_type', 'authorization_code');
+       formData.append('redirect_uri', 'http://localhost:4000');
+
+       async function fetchToken() {
+           var response = await fetch(tokenEndpoint, {
+               method: 'POST',
+               headers: {
+                   'Content-Type': 'application/x-www-form-urlencoded'
+               },
+               body: formData
+           });
+
+           return response.json();
+       }
+
+       fetchToken()
+           .then(function(data) {
+               window.localStorage.setItem('token', data.access_token);
+               window.location = '/';
+           })
+           .catch(function(error) {
+               console.log(error);
+           });
    })();
   </script>
 {% endblock %}

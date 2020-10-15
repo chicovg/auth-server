@@ -3,6 +3,7 @@
    [auth-server.db.core :refer [*db*] :as db]
    [auth-server.middleware.formats :as formats]
    [auth-server.middleware.exception :as exception]
+   [auth-server.routes.schema :as schema]
    [auth-server.routes.ui :refer [get-login-error-page]]
    [auth-server.routes.urls :refer [add-params-to-url base-url]]
    [buddy.hashers :as h]
@@ -20,29 +21,8 @@
    [reitit.ring.middleware.parameters :as parameters]
    [ring.util.codec :refer [url-decode url-encode]]
    [ring.util.response :refer [redirect]]
-   [ring.util.http-response :refer [bad-request ok]])
+   [ring.util.http-response :refer [bad-request ok not-implemented unauthorized]])
   (:import (java.util Date)))
-
-(s/def ::response_type #(= % "code"))
-(s/def ::client_id string?)
-(s/def ::redirect_uri (s/and string?
-                             #(try
-                                (io/as-url %)
-                                (catch Throwable t false))))
-(s/def ::scope string?)
-(s/def ::state string?)
-(s/def ::username string?)
-(s/def ::password string?)
-(s/def ::type #{"code"})
-
-(s/def ::authorize-query-params (s/keys :req-un [::response_type ::client_id ::redirect_uri]
-                                        :opt-un [::scope ::state]))
-
-(s/def ::login-form-params (s/keys :req-un [::username ::password]
-                                   :opt-un [::redirect_uri ::type]))
-
-(defn param [key value]
-  (str key "=" value))
 
 (defn service-routes []
   ["/api"
@@ -84,9 +64,10 @@
 
    ;; authorization
    ["/authorize" {:get {:summary "An endpoint used to request authorization of a user on behalf of a client"
-                        :parameters {:query ::authorize-query-params}
-                        :responses {302 nil
-                                    400 {:body {:error string?}}}
+                        :parameters {:query ::schema/authorize-query-params}
+                        :responses {302 {:description "Redirects to a login page"}
+                                    400 {:description "Input validation failed"}
+                                    401 {:description "An unauthorized client id was provided"}}
                         :handler (fn [{{{:keys [client_id redirect_uri]} :query} :parameters}]
                                    (if (nil? (db/get-client {:id client_id}))
                                      {:status 401 :body "Invalid client id"}
@@ -96,9 +77,10 @@
                                                     "&redirect_uri=" (url-encode redirect_uri)))))}}]
 
    ["/login" {:post {:summary "An endpoint which validates user credentials and redirects to approprate page"
-                     :parameters {}
-                     :responses {302 nil
-                                 400 {:body {:error string?}}}
+                     :parameters {:form ::schema/login-form-params}
+                     :responses {302 {:description "Redirects to the provided redirect uri or the server's base uri"}
+                                 400 {:description "Input validation failed"}
+                                 401 {:description "Authorization failed with the given credentials and client id"}}
                      :handler (fn [{{:keys [username password client_id redirect_uri type]} :params :as request}]
                                 (let [user (db/get-user {:username username})
                                       next_uri (or redirect_uri (base-url request))
@@ -122,6 +104,32 @@
                                     :else
                                     (-> (redirect next_uri)
                                         (assoc-in [:session :identity] username)))))}}]
+
+   ["/token" {:post {:summary "An endpoint which validates an authorization grant and returns a token"
+                     :swagger {:consumes ["application/x-www-form-urlencoded"]
+                               :produces ["application/json"]}
+                     :parameters {:form ::schema/token-form-params}
+                     :responses {200 {:body ::schema/token-response-body}}
+                     :handler (fn [{{:keys [code grant_type redirect_uri client_id]} :params}]
+                                (case grant_type
+                                  "authorization_code"
+                                  (let [data (try
+                                               (jwt/unsign code "secret")
+                                               (catch Throwable t {}))]
+                                    (prn data)
+                                    (cond
+                                      (not (s/valid? ::schema/authorization-code data))
+                                      (unauthorized {:error "Invalid authorization code"})
+
+                                      :else
+                                      (let [iat (.getTime (new Date))
+                                            exp (+ iat (* 30 60 1000))
+                                            token (jwt/sign (merge (select-keys data [:sub :client_id])
+                                                                   {:iat iat :exp exp})
+                                                            "secret")]
+                                        (ok {:access_token token :expires_in exp}))))
+
+                                  (not-implemented {:error (str "grant_type: " grant_type " valid but not yet implemented")})))}}]
 
    ;; ["/math"
    ;;  {:swagger {:tags ["math"]}}

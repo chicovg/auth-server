@@ -29,7 +29,7 @@
                        throw Error('Something went wrong, there should have been a redirect');
                    }
                })
-               .error(function(error) {
+               .catch(function(error) {
                    console.log(error);
                });
        });

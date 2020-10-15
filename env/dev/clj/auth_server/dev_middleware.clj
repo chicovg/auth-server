@@ -20,5 +20,5 @@
       wrap-error-page
       wrap-request-log
       (wrap-cors :access-control-allow-origin #"http://localhost.*"
-                 :access-control-allow-methods [:get])
+                 :access-control-allow-methods [:get :post])
       (wrap-exceptions {:app-namespaces ['auth-server]})))
