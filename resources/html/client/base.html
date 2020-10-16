@@ -19,6 +19,16 @@
               {% endblock %}
           </div>
       </section>
+      <div class="modal">
+          <div class="modal-background"></div>
+          <div class="modal-content">
+              <div class="box">
+                  <p class="title">Logged In Successfully!</p>
+                  <a class="button is-primary" href="/content">Proceed</a>
+              </div>
+          </div>
+          <button id="close" class="modal-close is-large" aria-label="close"></button>
+      </div>
 
     {% script "https://use.fontawesome.com/releases/v5.14.0/js/all.js" %}
     {% script "/js/client.js" %}

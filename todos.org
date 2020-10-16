@@ -10,8 +10,11 @@ ideally, I could use this for admins and users, lets see
 ** DONE create admin user via repl
 ** DONE POST credentials and redirect
 * STARTED example client app
+Lets get this into cljs before I do the implict flow...
 ** DONE landing page
-** TODO protected page
+** TODO migrate to cljs
+** TODO tidy up error handling
+** STARTED protected page
 - should request user data
 - get /api/user
   name, email, address, phone
@@ -56,13 +59,5 @@ actors:
 - user agent (browser)
 - auth-client (web app)
 - auth-server (service)
-** TODO resource owner credentials flow
+** DONE resource owner credentials flow
 ** DONE client credentials flow
-* TODO client registration UI
-admin -> registers client
-since I'm building my own client app, can't I just auto-register it?
-then I don't need to build the registation page right away
-** TODO get registration form
-** TODO registration endpoint
-* TODO Add users UI
-admin users can add other users

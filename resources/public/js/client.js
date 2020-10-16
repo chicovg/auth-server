@@ -60,13 +60,12 @@ async function fetchTokenWithAuthCode() {
 
 function handleTokenResponse(data) {
     window.localStorage.setItem('token', data.access_token);
-    alert('Logged in!');
+    document.getElementsByClassName('modal')[0].classList.add('is-active');
 }
 
-addEventListenerIfElement('redirect', 'load', function() {
-    // TODO not working...
+if (document.getElementById('redirect')) {
     fetchTokenWithAuthCode().then(handleTokenResponse);
-});
+}
 
 async function fetchTokenWithResourceOwnerCredentials() {
     let formData = new URLSearchParams();
@@ -108,5 +107,10 @@ async function fetchTokenWithClientCredentials() {
 }
 
 addEventListenerIfElement('client-credentials', 'click', function() {
+    console.log('here');
     fetchTokenWithClientCredentials().then(handleTokenResponse);
+});
+
+document.getElementById('close').addEventListener('click', function() {
+    document.getElementsByClassName('modal')[0].classList.remove('is-active');
 });
