@@ -4,11 +4,12 @@
    [buddy.sign.jwt :as jwt]
    [java-time :as t]))
 
-(defn sign-token [claims duration]
-  (let [iat (t/instant)
-        exp (t/plus iat (t/minutes duration))]
-    (-> (merge claims {:iat iat :exp exp})
-        (jwt/sign (env :secret)))))
+(defn sign-token
+  ([claims] (sign-token claims (env :auth-token-time-to-live)))
+  ([claims duration] (let [iat (t/instant)
+                           exp (t/plus iat (t/minutes duration))]
+                       (-> (merge claims {:iat iat :exp exp})
+                           (jwt/sign (env :secret))))))
 
 (defn unsign-token [token]
   (jwt/unsign token (env :secret)))

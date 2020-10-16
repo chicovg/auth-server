@@ -131,12 +131,25 @@
                                       (unauthorized {:error "Token expired"})
 
                                       :else
-                                      (ok {:access_token (sign-token (select-keys data [:sub :client_id]) 30)
+                                      (ok {:access_token (sign-token (select-keys data [:sub :client_id]))
                                            :expires_in (* 30 60 1000)})))
+
+                                  "password"
+                                  (cond
+                                    (not (s/valid? ::schema/token-from-password-params params))
+                                    (bad-request {:error "Invalid request params"})
+
+                                    (not (h/check (:password params) (:password (db/get-user params))))
+                                    (unauthorized {:error "Invalid credentials"})
+
+                                    :else
+                                    (ok {:access_token (sign-token {:sub (:username params)
+                                                                    :client_id identity})
+                                         :expires_in (* 30 60 1000)}))
 
                                   "client_credentials"
                                   (ok {:access_token (sign-token {:client_id identity} 30)
-                                       :expires_in (* 30 60 100)})
+                                       :expires_in (* 30 60 1000)})
 
 
                                   (not-implemented {:error (str "grant_type valid but not yet implemented")})))}}]

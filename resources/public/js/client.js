@@ -1,7 +1,7 @@
 const clientId = 'dev-client';
 const clientSecret = 'secret';
 
-const authorizeEndpoint = 'http//localhost:3000/api/authorize';
+const authorizeEndpoint = 'http://localhost:3000/api/authorize';
 const tokenEndpoint = 'http://localhost:3000/api/token';
 
 function addEventListenerIfElement(elementId, event, listenterFn) {
@@ -12,6 +12,14 @@ function addEventListenerIfElement(elementId, event, listenterFn) {
 }
 
 async function fetchAuthCode() {
+    let queryParams = new URLSearchParams();
+
+    queryParams.append('client_id', clientId);
+    queryParams.append('redirect_uri', 'http://localhost:4000/redirect')
+    queryParams.append('response_type', 'code')
+
+    let uri = authorizeEndpoint + '?' + queryParams.toString();
+
     await fetch(uri)
         .then(function(response) {
             if (response.redirected) {
@@ -26,7 +34,7 @@ async function fetchAuthCode() {
 }
 
 addEventListenerIfElement('authorization-code', 'click', function() {
-    fetchAuthToken();
+    fetchAuthCode();
 });
 
 async function fetchTokenWithAuthCode() {
@@ -50,11 +58,37 @@ async function fetchTokenWithAuthCode() {
     return response.json();
 }
 
+function handleTokenResponse(data) {
+    window.localStorage.setItem('token', data.access_token);
+    alert('Logged in!');
+}
+
 addEventListenerIfElement('redirect', 'load', function() {
-    fetchTokenWithAuthCode().then(function(data) {
-        window.localStorage.setItem('token', data.access_token);
-        window.location = '/';
+    // TODO not working...
+    fetchTokenWithAuthCode().then(handleTokenResponse);
+});
+
+async function fetchTokenWithResourceOwnerCredentials() {
+    let formData = new URLSearchParams();
+
+    formData.append('grant_type', 'password');
+    formData.append('username', document.getElementById('username').value);
+    formData.append('password', document.getElementById('password').value);
+
+    let response = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Authorization: 'Basic ' + btoa(clientId + ':' + clientSecret),
+        },
+        body: formData,
     });
+
+    return response.json();
+}
+
+addEventListenerIfElement('resource-owner', 'click', function() {
+    fetchTokenWithResourceOwnerCredentials().then(handleTokenResponse);
 });
 
 async function fetchTokenWithClientCredentials() {
@@ -74,8 +108,5 @@ async function fetchTokenWithClientCredentials() {
 }
 
 addEventListenerIfElement('client-credentials', 'click', function() {
-    fetchTokenWithClientCredentials().then(function(data) {
-        window.localStorage.setItem('token', data.access_token);
-        window.location = '/';
-    });
+    fetchTokenWithClientCredentials().then(handleTokenResponse);
 });
