@@ -1,6 +1,6 @@
 (defproject auth-server "0.1.0-SNAPSHOT"
 
-  :description "FIXME: write description"
+  :description "An example OAuth server and client"
   :url "http://example.com/FIXME"
 
   :dependencies [[buddy/buddy-auth "2.2.0"]

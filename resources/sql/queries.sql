@@ -1,9 +1,10 @@
--- :name create-user! :! :n
+-- :name create-user! :! :<!
 -- :doc creates a new user record
 INSERT INTO users
 (username, password, admin, last_login, is_active)
 VALUES
 (:username, :password, :admin, CURRENT_TIMESTAMP, true)
+RETURNING id
 
 -- :name update-user-last-login! :! :n
 -- :doc updates the last_login field of the specified user
@@ -43,3 +44,32 @@ WHERE id = :id
 -- :doc deletes a client record given the id
 DELETE FROM clients
 WHERE id = :id
+
+-- :name create-user-details! :! :n
+-- :doc creates a new user_details record
+INSERT INTO user_details
+(user_id, first_name, last_name, email, address, city, state, zipcode)
+VALUES
+(:user_id, :first_name, :last_name, :email, :address, :city, :state, :zipcode)
+
+-- :name update-user-details! :! :n
+-- :doc updates user details for the given user_id
+UPDATE user_details
+SET first_name = :first_name,
+    last_name = :last_name,
+    email = :email,
+    address = :address,
+    city = :city,
+    state = :state
+    zipcode = :zipcode
+WHERE user_id = :user_id
+
+-- :name get-user-details :? :1
+-- :doc retries user details by user_id
+SELECT * FROM user_details
+WHERE user_id = :user_id
+
+-- :name delete-user-details! :! :n
+-- :doc deletes user_details for the given user_id
+DELETE FROM user_details
+WHERE user_id = :user_id

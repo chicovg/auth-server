@@ -6,8 +6,11 @@
 
 (defn sign-token
   ([claims] (sign-token claims (env :auth-token-time-to-live)))
-  ([claims duration] (let [iat (t/instant)
-                           exp (t/plus iat (t/minutes duration))]
+  ([claims duration] (let [iat (-> (t/instant)
+                                   (t/to-millis-from-epoch))
+                           exp (-> (t/instant)
+                                   (t/plus (t/minutes duration))
+                                   (t/to-millis-from-epoch))]
                        (-> (merge claims {:iat iat :exp exp})
                            (jwt/sign (env :secret))))))
 
