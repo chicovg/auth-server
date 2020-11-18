@@ -28,6 +28,7 @@
                  [mount "0.1.16"]
                  [nrepl "0.8.0"]
                  [org.clojure/clojure "1.10.1"]
+                 [org.clojure/clojurescript "1.10.238"]
                  [org.clojure/tools.cli "1.0.194"]
                  [org.clojure/tools.logging "1.1.0"]
                  [org.postgresql/postgresql "42.2.14"]
@@ -35,6 +36,7 @@
                  [org.webjars.npm/material-icons "0.3.1"]
                  [org.webjars/webjars-locator "0.40"]
                  [org.webjars/webjars-locator-jboss-vfs "0.1.0"]
+                 [reagent "1.0.0-alpha2"]
                  [ring-webjars "0.2.0"]
                  [ring/ring-core "1.8.1"]
                  [ring/ring-defaults "0.3.2"]
@@ -45,11 +47,11 @@
   
   :source-paths ["src/clj"]
   :test-paths ["test/clj"]
-  :resource-paths ["resources"]
+  :resource-paths ["resources" "target/cljsbuild"]
   :target-path "target/%s/"
   :main ^:skip-aot auth-server.core
 
-  :plugins [] 
+  :plugins [[lein-cljsbuild "1.1.8"]]
 
   :profiles
   {:client {:main client.core}
@@ -81,4 +83,12 @@
    :profiles/dev {}
    :profiles/test {}
 
-   :aliases {:client ["with-profile" "client" "run"]}})
+   :aliases {:client ["with-profile" "client" "run"]}}
+  :cljsbuild {:builds {:client {:source-paths ["src/cljs"]
+                                :compiler {:main client.app
+                                           :asset-path "js/out"
+                                           :output-to "target/cljsbuild/public/js/client-app.js"
+                                           :output-dir "target/cljsbuild/public/js/out"
+                                           :optimizations :none
+                                           :source-map true
+                                           :pretty-print true}}}})
