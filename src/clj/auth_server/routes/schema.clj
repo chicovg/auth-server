@@ -34,7 +34,7 @@
 
 (s/def ::token-form-params (s/keys :req-un [::grant_type]))
 
-(s/def ::token-from-auth-code-params (s/keys :req-un [::client_id ::code ::grant_type ::redirect_uri]))
+(s/def ::token-from-auth-code-params (s/keys :req-un [::client_id ::code ::grant_type]))
 
 (s/def ::token-from-password-params (s/keys :req-un [::grant_type ::username ::password]))
 

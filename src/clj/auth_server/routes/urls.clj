@@ -1,19 +1,44 @@
 (ns auth-server.routes.urls
-  (:require [clojure.java.io :as io]
-            [clojure.string :as s]))
+  (:require [cemerick.url :refer [url]]))
 
-(defn- to-param-str [params]
-  (->>
-   (seq params)
-   (map (fn [[k v]] (str (name k) "=" v)))
-   (s/join "&")))
+(defn add-query-params [raw-url params]
+  (let [parsed-url (url raw-url)
+        query (merge (:query parsed-url)
+                     params)]
+    (-> parsed-url
+        (assoc :query query)
+        str)))
 
-(defn add-params-to-url [url params]
-  (let [parsed-url (io/as-url url)
-        param-str (to-param-str params)]
-    (if (empty? (.getQuery parsed-url))
-      (str url "?" param-str)
-      (str url "&" param-str))))
+(defn set-hash [raw-url hash]
+  (let [parsed-url (url raw-url)
+        parsed-hash (:anchor parsed-url)
+        full-hash (if parsed-hash
+                    (str parsed-hash "/" hash)
+                    (str "/" hash))]
+    (-> parsed-url
+        (assoc :anchor full-hash)
+        str)))
+
+(comment
+  (set-hash "http://localhost:4000#/redirect-with-token" "token=foo")
+   ;; http://localhost:4000#/redirect-with-token/token=foo
+
+  (set-hash "http://localhost:3000" "token=foo")
+   ;; http://localhost:3000#/token=foo
+
+  ;; let see how the router handles this...
+  (require '[reitit.core :as r])
+
+  (def router
+    (r/router
+     [["/" :home]
+      ["/redirect-with-code" :redirect-with-code]
+      ["/redirect-with-token/token=:token" :redirect-with-token]
+      ["/user" :user]]))
+
+  (r/match-by-path router "/redirect-with-token/token=foo")
+
+  )
 
 (defn base-url [request]
   (str (-> request :scheme name) "://"

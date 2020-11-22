@@ -7,7 +7,7 @@
    [auth-server.routes.schema :as schema]
    [auth-server.routes.tokens :refer [sign-token unsign-token expired?]]
    [auth-server.routes.ui :refer [get-login-error-page]]
-   [auth-server.routes.urls :refer [add-params-to-url base-url]]
+   [auth-server.routes.urls :refer [add-query-params base-url set-hash]]
    [buddy.hashers :as h]
    [clojure.spec.alpha :as s]
    [reitit.swagger :as swagger]
@@ -17,10 +17,9 @@
    [reitit.ring.middleware.muuntaja :as muuntaja]
    [reitit.ring.middleware.multipart :as multipart]
    [reitit.ring.middleware.parameters :as parameters]
-   [ring.util.codec :refer [url-decode url-encode]]
+   [ring.util.codec :refer [url-encode]]
    [ring.util.response :refer [redirect]]
-   [ring.util.http-response :refer [bad-request ok not-found not-implemented unauthorized]])
-  (:import (java.util Date)))
+   [ring.util.http-response :refer [bad-request ok not-found not-implemented unauthorized]]))
 
 (defn service-routes []
   ["/api"
@@ -90,16 +89,16 @@
                                     (get-login-error-page request 401 "Invalid client id")
 
                                     (= type "code")
-                                    (-> (add-params-to-url next_uri {:code (sign-token {:sub username
+                                    (-> (add-query-params next_uri {"code" (sign-token {:sub username
                                                                                         :client_id client_id}
                                                                                        10)})
                                         (redirect))
 
                                     (= type "token")
                                     (-> next_uri
-                                        (str "#token=" (sign-token {:sub username
-                                                                    :client_id client_id}
-                                                                   10))
+                                        (set-hash (str "token=" (sign-token {:sub username
+                                                                             :client_id client_id}
+                                                                            10)))
                                         (redirect))
 
                                     :else
@@ -112,7 +111,7 @@
                      :middleware [wrap-restricted]
                      :parameters {:form ::schema/token-form-params}
                      :responses {200 {:body ::schema/token-response-body}}
-                     :handler (fn [{:keys [headers identity params]}]
+                     :handler (fn [{:keys [identity params]}]
                                 (case (:grant_type params)
                                   "authorization_code"
                                   (let [code (:code params)

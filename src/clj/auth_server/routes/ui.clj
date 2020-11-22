@@ -1,6 +1,6 @@
 (ns auth-server.routes.ui
   (:require
-   [auth-server.routes.urls :refer [add-params-to-url]]
+   [auth-server.routes.urls :refer [add-query-params]]
    [auth-server.db.core :refer [*db*] :as db]
    [buddy.hashers :as h]
    [clojure.java.io :as io]
