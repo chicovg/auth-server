@@ -1,8 +1,6 @@
 # auth-server
 
-generated using Luminus version "3.85"
-
-FIXME
+An example oauth server and client built with luminus.
 
 ## Prerequisites
 
