@@ -125,7 +125,7 @@
                                       (not (s/valid? ::schema/authorization-code data))
                                       (bad-request {:error "Invalid authorization code"})
 
-                                      (not (= identity (:client_id data)))
+                                      (not (= (:id identity) (:client_id data)))
                                       (unauthorized {:error "Unauthorized client"})
 
                                       (nil? (db/get-user {:username (:sub data)}))
@@ -137,7 +137,6 @@
                                       :else
                                       (ok {:access_token (sign-token (select-keys data [:sub :client_id]))
                                            :expires_in (* 30 60 1000)})))
-
                                   "password"
                                   (cond
                                     (not (s/valid? ::schema/token-from-password-params params))
@@ -148,25 +147,24 @@
 
                                     :else
                                     (ok {:access_token (sign-token {:sub (:username params)
-                                                                    :client_id identity})
+                                                                    :client_id (:id identity)})
                                          :expires_in (* 30 60 1000)}))
 
                                   "client_credentials"
-                                  (ok {:access_token (sign-token {:client_id identity} 30)
+                                  (ok {:access_token (sign-token {:client_id (:id identity)} 30)
                                        :expires_in (* 30 60 1000)})
 
                                   (not-implemented {:error (str "grant_type valid but not yet implemented")})))}}]
 
-   ["/user/:username" {:get {:summary "An endpoint that gets user details"
-                             :swagger {:produces ["application/json"]}
-                             :middleware [wrap-restricted]
-                             :parameters {:path {:username string?}}
-                             :responses {200 {:body ::schema/user}}
-                             :handler (fn [{path-params :path-params}]
-                                        (prn path-params)
-                                        (let [user (db/get-user path-params)
-                                              details (when user (db/get-user-details {:user_id (:id user)}))]
-                                          (if user
-                                            (ok (merge (select-keys user [:username])
-                                                       details))
-                                            (not-found (str "User " (:username path-params) " not found")))))}}]])
+   ["/user" {:get {:summary "An endpoint that gets user (or client) details"
+                   :swagger {:produces ["application/json"]}
+                   :middleware [wrap-restricted]
+                   :handler (fn [{:keys [identity]}]
+                              (prn identity)
+                              (if (:username identity)
+                                (let [details (db/get-user-details {:user_id (:id identity)})]
+                                  (if details
+                                    (ok (merge (select-keys identity [:username])
+                                               details))
+                                    (not-found (str "User details for " (:username identity) " not found"))))
+                                (ok (select-keys identity [:id :description]))))}}]])

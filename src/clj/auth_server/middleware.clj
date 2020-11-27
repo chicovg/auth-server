@@ -26,7 +26,7 @@
   (prn username password)
   (when-let [client (db/get-client {:id username})]
     (when (h/check password (:secret client))
-      username)))
+      client)))
 
 (defn jwt-auth-fn [{:keys [client_id sub] :as claims}]
   (prn claims)

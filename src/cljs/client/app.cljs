@@ -1,5 +1,6 @@
 (ns client.app
-  (:require [clojure.string as :s]
+  (:require [client.utils :refer [get-item remove-item! set-location! set-item!]]
+            [clojure.string :as s]
             [reagent.core :as r]
             [reagent.dom :as rdom]
             [reitit.core :as reitit]
@@ -17,25 +18,28 @@
                                                                client-secret)))})
 (def authorize-url "http://localhost:3000/api/authorize")
 (def token-url "http://localhost:3000/api/token")
+(def user-details-url "http://localhost:3000/api/user")
 (def redirect-with-code-url "http://localhost:4000/#/redirect-with-code")
 (def redirect-with-token-url "http://localhost:4000/#/redirect-with-token")
 (def user-url "http://localhost:4000/#/user")
+(def token-key "token")
 
-(def state (r/atom {:page :home}))
+(def state (r/atom {:error nil
+                    :page :home
+                    :token nil}))
 
 (defn create-token [form-params]
   (POST token-url {:body form-params
                    :headers token-request-headers
                    :response-format :json
                    :handler (fn [res]
-                              (set! (.. js/document -location)
-                                    (str redirect-with-token-url "/token=" (get res "access_token"))))
+                              (set-item! token-key (get res "access_token"))
+                              (set-location! user-url))
                    :error-handler (fn [{:keys [error]}]
                                     (let [err (or error "Unable to get token")]
-                                      (swap! state #(-> %
-                                                        (assoc :error err)
-                                                        (assoc :token nil)
-                                                        (assoc :page :home)))))}))
+                                      (print err)
+                                      (remove-item! token-key)
+                                      (set-location! "/")))}))
 
 (defn simple-auth-panel [{:keys [title link handler]}]
   [:div.box.tile.is-child
@@ -125,9 +129,50 @@
                         (assoc :error "Couldn't get auth code")
                         (assoc :page :home))))))
 
+(defn fetch-user-details [token]
+  (print token)
+  (GET user-details-url
+    {:headers {"Authorization" (str "Token " token)}
+     :format :json
+     :response-format :json
+     :handler #(swap! state assoc :user %)
+     :error-handler #(swap! state assoc :error "Unable to fetch user")}))
+
 (defn user-page []
-  (let [state @state]
-    [:div (:token state)]))
+  (let [s @state
+        user (:user s)
+        token (get-item token-key)
+        log-out #(do
+                   (remove-item! token-key)
+                   (set-location! "/"))]
+    (cond
+      (get s :error)
+      (do
+        (remove-item! token-key)
+        (set-location! "/"))
+
+      (get user "id")
+      [:div.box
+       [:div.block
+        [:p [:strong "Logged in as client: "] (get user "id")]
+        [:p (get user "description")]]
+       [:button.button.is-primary {:on-click log-out} "Logout"]]
+
+      (get user "username")
+      [:div.box
+       [:div.block
+        [:p [:strong "Logged in as user: "] (get user "username")]
+        [:ul
+         [:li (get user "first_name")]
+         [:li (get user "last_name")]
+         [:li (get user "email")]]]
+       [:button.button.is-primary {:on-click log-out} "Logout"]]
+
+      :else
+      (do
+        (print token)
+        (fetch-user-details token)
+        [:div "Loading..."]))))
 
 (def pages
   {:home #'home-page
@@ -160,8 +205,8 @@
              token (get-in route-match [:path-params :token])]
          (if (and (= page :redirect-with-token) token)
            (do
-             (set! (.. js/document -location) user-url)
-             (swap! state assoc :token token))
+             (set-item! token-key token)
+             (set-location! user-url))
            (swap! state assoc :page page)))))
     (.setEnabled true)))
 

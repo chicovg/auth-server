@@ -38,6 +38,12 @@
 
   (r/match-by-path router "/redirect-with-token/token=foo")
 
+  ;; #reitit.core.Match{:template "/redirect-with-token/token=:token",
+  ;;                  :data {:name :redirect-with-token},
+  ;;                  :result nil,
+  ;;                  :path-params {:token "foo"},
+  ;;                  :path "/redirect-with-token/token=foo"}
+
   )
 
 (defn base-url [request]
